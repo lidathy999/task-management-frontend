@@ -120,13 +120,6 @@ const selectedTaskType = ref<number>(0);
 const selectedPriority = ref<number>(0);
 const priorities = ref<any[]>([]);
 
-const itemProps = (item: any) => {
-  return {
-    title: item.name,
-    value: item.id,
-  };
-};
-
 const userTasks = reactive<UserTasks>({
   products: [],
   tasks: [],
@@ -161,6 +154,13 @@ const newPriorities =
   }) || [];
 
 priorities.value = newPriorities;
+
+const itemProps = (item: any) => {
+  return {
+    title: item.name,
+    value: item.id,
+  };
+};
 
 const saveTask = async () => {
   if (
