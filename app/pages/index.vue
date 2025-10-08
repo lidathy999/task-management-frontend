@@ -13,12 +13,13 @@
     </template>
 
     <template v-slot:default="{ isActive }">
-      <v-card title="Dialog" class="pa-4">
-        <v-form ref="form" v-model="valid" lazy-validation>
+      <v-form ref="form" v-model="valid" lazy-validation>
+        <v-card title="Dialog" class="pa-4">
           <v-select
             v-model="selectedTaskType"
             :items="userTasks.taskTypes"
             :item-props="itemProps"
+            :rules="[(v: any) => !!v || 'Issue Type is required']"
             item-text="name"
             item-value="id"
             label="Issue Type*"
@@ -29,6 +30,7 @@
 
           <v-text-field
             v-model="title"
+            :rules="[(v: any) => !!v || 'Title is required']"
             label="Title*"
             required
             class="mb-4"
@@ -38,7 +40,6 @@
           <v-textarea
             v-model="description"
             label="Description"
-            required
             class="mb-4"
           ></v-textarea>
 
@@ -46,6 +47,7 @@
             v-model="selectedPriority"
             :items="userTasks.priorities"
             :item-props="itemProps"
+            :rules="[(v: any) => !!v || 'Priority is required']"
             item-text="name"
             item-value="id"
             label="Priority*"
@@ -54,17 +56,19 @@
             required
           >
           </v-select>
-        </v-form>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn text="Close" @click="isActive.value = false"></v-btn>
-          <v-btn text="Save" @click="saveTask"></v-btn>
-        </v-card-actions>
-      </v-card>
+          <v-card-actions>
+            <v-spacer></v-spacer>
+            <v-btn text="Close" @click="onClose(isActive)"></v-btn>
+            <v-btn text="Save" @click="saveTask(isActive)"></v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-form>
     </template>
   </v-dialog>
 
-  <div class="min-w-[1100px] overflow-y-scroll grid grid-cols-4 gap-4 w-full !mt-6 !p-4">
+  <div
+    class="min-w-[1100px] overflow-y-scroll grid grid-cols-4 gap-4 w-full !mt-6 !p-4"
+  >
     <div
       v-for="(item, index) in taskStatuses"
       :key="item.id"
@@ -113,14 +117,16 @@ const { todos } = storeToRefs(todoStore);
 
 const taskStatuses = ref<any[]>(TASK_STATUS);
 
-const valid = ref(false);
+const valid = ref(true);
+const form = ref<any>(null);
+
 const title = ref("");
 const description = ref("");
 const selectedTaskType = ref<number>(0);
 const selectedPriority = ref<number>(0);
 const priorities = ref<any[]>([]);
 
-const userTasks = reactive<UserTasks>({
+const userTasks = reactive<any>({ // Changed type to any for simplicity here
   products: [],
   tasks: [],
   priorities: PRIORITY,
@@ -162,13 +168,25 @@ const itemProps = (item: any) => {
   };
 };
 
-const saveTask = async () => {
-  if (
-    !selectedTaskType.value ||
-    !selectedPriority.value ||
-    title.value === ""
-  ) {
-    console.error("Task type and priority must be selected");
+const validate = async(): Promise<boolean> => {
+    if (!form.value) return false;
+    const { valid: isValid } = await form.value.validate();
+    return isValid;
+};
+
+const onClose = (isActive: any) => {
+  isActive.value = false;
+  title.value = "";
+  description.value = "";
+  selectedTaskType.value = 0;
+  selectedPriority.value = 0;
+};
+
+const saveTask = async (isActive: any) => {
+  const isValid = await validate();
+  
+  if (!isValid) {
+    console.error("Form validation failed. Task not created.");
     return;
   }
 
@@ -177,15 +195,17 @@ const saveTask = async () => {
     title: title.value,
     description: description.value,
     taskTypeId: selectedTaskType.value,
-    taskStatusId: 1,
+    taskStatusId: 1, 
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
-
+  
   title.value = "";
   description.value = "";
   selectedTaskType.value = 0;
   selectedPriority.value = 0;
+  
+  isActive.value = false;
 };
 </script>
 
